@@ -42,6 +42,15 @@ def validate(fixture: SyntheticFixture, solution: DeterministicSolution, toleran
             errors.append("positive flow uses an unavailable arc")
         if solution.congestion[edge] + tolerance < total / (arc.capacity_pb_per_day - total):
             errors.append("congestion epigraph is violated")
+    for node, reported in solution.processing_loads.items():
+        actual = sum(solution.stage0_flow[edge] for edge in arcs if edge[1] == node) + sum(amount for (slot, edge), amount in solution.stage1_flow.items() if edge[1] == node)
+        node_data = fixture.topology.node(node)
+        if abs(reported - actual) > tolerance:
+            errors.append(f"processing load is inconsistent at {node}")
+        if reported > node_data.processing_capacity_pb_per_day + tolerance:
+            errors.append(f"processing capacity is exceeded at {node}")
+        if reported > node_data.temporary_buffer_pb + tolerance:
+            errors.append(f"temporary buffer is exceeded at {node}")
     exposure = sum(arcs[edge].failure_exposure * (solution.stage0_flow[edge] + sum(solution.stage1_flow[slot, edge] for slot in fixture.replica_slots)) for edge in arcs)
     if exposure > fixture.dataset.failure_exposure_budget + tolerance:
         errors.append("failure exposure budget is violated")

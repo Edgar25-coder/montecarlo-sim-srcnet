@@ -70,6 +70,7 @@ Synthetic experiments, including a full controlled campaign, may proceed after a
 | Date / milestone | Command or check | Environment and input | Actual result / artifact | Commit |
 | --- | --- | --- | --- | --- |
 | 2026-10-16 / B1 | `.venv/bin/python -m pytest -q`; `.venv/bin/srcnet-mc probe-scip`; `docker run --rm srcnet-mc:local probe-scip` | CPython 3.12, macOS arm64; NumPy 2.3.5, SciPy 1.16.3, PySCIPOpt 6.1.0; digest-pinned Python 3.12 Docker image | 1 passed; native and container SCIP probes returned optimal, activation 1, flow 2.0, congestion 0.249999999875 | Pending |
+| 2026-10-16 / B2 partial | `.venv/bin/python -m pytest -q` | Synthetic deterministic fixture | 7 passed; exact fixture plus independent checks for two-stage flow, activation, capacity/stability, congestion, exposure, processing and buffers; negative processing and flow checks pass | Pending |
 
 Replace this placeholder row when the first actual check is run. Record failures as well as passes and keep consequential evidence.
 

@@ -32,6 +32,7 @@ class DeterministicSolution:
     stage0_flow: dict[tuple[str, str], float]
     stage1_flow: dict[tuple[str, tuple[str, str]], float]
     congestion: dict[tuple[str, str], float]
+    processing_loads: dict[str, float]
     eta: float
     objective: float
 
@@ -48,8 +49,8 @@ def synthetic_fixture() -> SyntheticFixture:
             Node("t0", NodeRole.T0, processing_capacity_pb_per_day=8, temporary_buffer_pb=8),
             Node("se-a", NodeRole.NON_T0, processing_capacity_pb_per_day=8, temporary_buffer_pb=8, src="A"),
             Node("se-b", NodeRole.NON_T0, processing_capacity_pb_per_day=8, temporary_buffer_pb=8, src="B"),
-            Node("store-a", NodeRole.STORAGE, persistent_capacity_pb=5, temporary_buffer_pb=5, parent_se="se-a", src="A"),
-            Node("store-b", NodeRole.STORAGE, persistent_capacity_pb=5, temporary_buffer_pb=5, parent_se="se-b", src="B"),
+            Node("store-a", NodeRole.STORAGE, processing_capacity_pb_per_day=8, persistent_capacity_pb=5, temporary_buffer_pb=5, parent_se="se-a", src="A"),
+            Node("store-b", NodeRole.STORAGE, processing_capacity_pb_per_day=8, persistent_capacity_pb=5, temporary_buffer_pb=5, parent_se="se-b", src="B"),
         ),
         arcs=(
             Arc("sdp", "t0", 5), Arc("t0", "se-a", 5), Arc("se-a", "store-a", 5),
@@ -89,6 +90,7 @@ def solve(fixture: SyntheticFixture) -> DeterministicSolution:
     f0 = {edge: model.addVar(f"f0_{edge[0]}_{edge[1]}", lb=0) for edge in arcs}
     f1 = {(slot, edge): model.addVar(f"f1_{slot}_{edge[0]}_{edge[1]}", lb=0) for slot in fixture.replica_slots for edge in arcs}
     congestion = {edge: model.addVar(f"cong_{edge[0]}_{edge[1]}", lb=0) for edge in arcs}
+    load = {node: model.addVar(f"load_{node}", lb=0) for node in nodes if node != dataset.source_sdp}
     eta = model.addVar("eta", lb=0, ub=fixture.max_utilisation)
 
     model.addCons(quicksum(x[node] for node in x if nodes[node].role is NodeRole.T0) >= 1)
@@ -114,6 +116,15 @@ def solve(fixture: SyntheticFixture) -> DeterministicSolution:
     for store in storage:
         model.addCons(quicksum(dataset.volume_pb * z[slot, store] for slot in fixture.replica_slots) <= nodes[store].persistent_capacity_pb * x[store])
         model.addCons(x[store] <= x[nodes[store].parent_se])
+
+    # In this fixture processing load is the aggregate inbound daily volume.
+    # It is deliberately defined here, rather than inferred from quarterly
+    # example values, to keep the synthetic unit convention explicit.
+    for node, value in load.items():
+        inbound = quicksum(f0[edge] for edge in arcs if edge[1] == node) + quicksum(f1[slot, edge] for slot in fixture.replica_slots for edge in arcs if edge[1] == node)
+        model.addCons(value == inbound)
+        model.addCons(value <= nodes[node].processing_capacity_pb_per_day * x[node])
+        model.addCons(value <= nodes[node].temporary_buffer_pb * x[node])
 
     for node in nodes:
         out0 = quicksum(f0[edge] for edge in arcs if edge[0] == node)
@@ -144,5 +155,6 @@ def solve(fixture: SyntheticFixture) -> DeterministicSolution:
         {slot: next(store for store in storage if model.getSolVal(sol, z[slot, store]) > 0.5) for slot in fixture.replica_slots},
         {edge: model.getSolVal(sol, f0[edge]) for edge in arcs},
         {(slot, edge): model.getSolVal(sol, f1[slot, edge]) for slot in fixture.replica_slots for edge in arcs},
-        {edge: model.getSolVal(sol, congestion[edge]) for edge in arcs}, model.getSolVal(sol, eta), model.getSolObjVal(sol),
+        {edge: model.getSolVal(sol, congestion[edge]) for edge in arcs},
+        {node: model.getSolVal(sol, load[node]) for node in load}, model.getSolVal(sol, eta), model.getSolObjVal(sol),
     )
