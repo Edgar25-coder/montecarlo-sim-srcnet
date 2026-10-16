@@ -8,15 +8,16 @@ from srcnet_mc.optimization.deterministic import DeterministicSolution, Syntheti
 def validate(fixture: SyntheticFixture, solution: DeterministicSolution, tolerance: float = 1e-7) -> list[str]:
     """Return violations without querying the SCIP model or variables."""
     errors: list[str] = []
-    stores = set(solution.replica_storage.values())
+    replica_stores = list(solution.replica_storage.values())
+    stores = set(replica_stores)
     if solution.receiver not in fixture.dataset.compatible_receivers:
         errors.append("receiver is incompatible")
     if len(stores) != len(fixture.replica_slots):
         errors.append("replicas share a storage node")
-    parents = [fixture.topology.node(store).parent_se for store in stores]
+    parents = [fixture.topology.node(store).parent_se for store in replica_stores]
     if len(set(parents)) != len(parents):
         errors.append("replicas share a non-T0 parent")
-    srcs = [fixture.topology.node(store).src for store in stores]
+    srcs = [fixture.topology.node(store).src for store in replica_stores]
     if len(set(srcs)) != len(srcs):
         errors.append("replicas share an SRC")
     arcs = {(arc.tail, arc.head): arc for arc in fixture.topology.arcs}

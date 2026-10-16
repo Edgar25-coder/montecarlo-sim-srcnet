@@ -28,7 +28,7 @@ This file tracks the future Codex development, not the preparation of the starte
 | A3 | Complete | A1-A2 | Current library/solver comparison, architecture, feasibility-probe design, resource strategy | `LIBRARY_OPTIONS.md`, selected stack and real probe design |
 | G1 | Complete | A3 | User's simulation engine, modelling layer, solver, formulation and key semantic choices | User selection recorded in ADR-013 to ADR-017 |
 | B1 | Complete | G1 | Package skeleton, pinned environment, solver probe, native/container setup, fast CI | CPython 3.12 venv; `pytest -q` 1 passed; probe optimal on 2026-10-16 |
-| B2 | In progress | B1 | Deterministic optimiser, independent feasibility checker, complete tiny fixtures | Synthetic vertical fixture solves and independent checks pass; broader constraint fixtures remain pending |
+| B2 | Complete | B1 | Deterministic optimiser, independent feasibility checker, complete tiny fixtures | Synthetic vertical fixture solves; independent positive/negative checks cover every constraint family applicable to the fixture |
 | B3 | Pending | B2 | Markov traces, samplers, seed hierarchy, daily state and retention/storage lifecycle | Moment conversions, Markov checks, mass balance, expiry boundaries, replay/reset checks |
 | B4 | Pending | B3 | S1-S4 configurations, offline/online contracts, restricted policy observations | Feature isolation, same-input paired policies, no future leakage, immutable existing copies |
 | B5 | Pending | B4 | Metrics, independent-replication statistics, outputs/manifests, CLI, bounded parallel runner | Correct denominators/aggregation; worker-independent traces; status/error accounting |
@@ -71,6 +71,7 @@ Synthetic experiments, including a full controlled campaign, may proceed after a
 | --- | --- | --- | --- | --- |
 | 2026-10-16 / B1 | `.venv/bin/python -m pytest -q`; `.venv/bin/srcnet-mc probe-scip`; `docker run --rm srcnet-mc:local probe-scip` | CPython 3.12, macOS arm64; NumPy 2.3.5, SciPy 1.16.3, PySCIPOpt 6.1.0; digest-pinned Python 3.12 Docker image | 1 passed; native and container SCIP probes returned optimal, activation 1, flow 2.0, congestion 0.249999999875 | Pending |
 | 2026-10-16 / B2 partial | `.venv/bin/python -m pytest -q` | Synthetic deterministic fixture | 7 passed; exact fixture plus independent checks for two-stage flow, activation, capacity/stability, congestion, exposure, processing and buffers; negative processing and flow checks pass | Pending |
+| 2026-10-16 / B2 | `.venv/bin/python -m pytest -q` | Synthetic deterministic fixture | 10 passed; independent negative checks detect inactive/unavailable links, congestion, persistent capacity, parent/SRC diversity, processing and flow violations | Pending |
 
 Replace this placeholder row when the first actual check is run. Record failures as well as passes and keep consequential evidence.
 
@@ -80,5 +81,5 @@ For each campaign retain: campaign ID; scenario/policies; N and H requested/comp
 
 ## Next action
 
-Extend B2 with negative/edge fixtures and independently validate remaining processing and buffer constraint families before building stochastic scenarios.
+Implement B3: named stochastic parameter objects, Markov traces, stable RNG hierarchy, daily state and retention/storage lifecycle.
 
