@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "srcnet-mc"
+version = "0.1.0"
+description = "Reproducible Monte Carlo experiments for the SRCNet model"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = {text = "MIT"}
+dependencies = [
+    "numpy==2.3.5",
+    "scipy==1.16.3",
+    "PySCIPOpt==6.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.2"]
+
+[project.scripts]
+srcnet-mc = "srcnet_mc.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
